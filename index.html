@@ -450,7 +450,7 @@
   </div>
 
   <script>
-    const ROWS = 19, COLS = 19, SPEED = 0.085;
+    const ROWS = 19, COLS = 19, SPEED = 5.0; // buněk za sekundu - nezávisle na FPS
     const MAZE_SRC = [
       [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -564,7 +564,7 @@
       updateSidebar(); showScreen('game');
       clearInterval(timerInt); timerInt = setInterval(tickTime, 1000);
       clearInterval(nivaSpawnInt); nivaSpawnInt = setInterval(spawnNiva, 1200);
-      cancelAnimationFrame(raf); loop();
+      cancelAnimationFrame(raf); lastTime = 0; loop(0);
     }
 
     function tickTime() {
@@ -640,8 +640,8 @@
       return maze[r][c] !== 1;
     }
 
-    function movePlayer() {
-      const sp = SPEED;
+    function movePlayer(dt) {
+      const sp = SPEED * dt; // pohyb v buňkách za tento snímek
 
       // Snap threshold: how close to a grid center before we allow turning
       const snap = 0.15;
@@ -809,11 +809,15 @@
       ctx.restore();
     }
 
-    function loop() {
+    let lastTime = 0;
+    function loop(timestamp) {
       if (!gameRunning) return;
       raf = requestAnimationFrame(loop);
-      mouthTick++; if (mouthTick % 18 === 0) mouthOpen = !mouthOpen;
-      movePlayer(); draw();
+      const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+      lastTime = timestamp;
+      mouthTick += dt;
+      if (mouthTick >= 0.3) { mouthOpen = !mouthOpen; mouthTick = 0; }
+      movePlayer(dt); draw();
     }
 
     async function endGame() {
