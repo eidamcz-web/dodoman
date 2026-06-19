@@ -167,11 +167,15 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYhSr6n_0plaZj
 
 async function getScores(){
   try{
+    console.log('Načítám žebříček z:', APPS_SCRIPT_URL + '?action=get');
     const r = await fetch(APPS_SCRIPT_URL + '?action=get', {redirect:'follow'});
-    const data = await r.json();
+    console.log('HTTP status:', r.status);
+    const text = await r.text();
+    console.log('Odpověď:', text.substring(0,200));
+    const data = JSON.parse(text);
     return Array.isArray(data) ? data : [];
   } catch(e){
-    console.warn('Načítání žebříčku selhalo', e);
+    console.error('Načítání žebříčku selhalo:', e);
     return [];
   }
 }
@@ -186,17 +190,30 @@ async function saveScores(arr){
       cm: latest.cm,
       pts: latest.pts
     });
-    // GET request s parametry — žádný CORS problém
-    await fetch(APPS_SCRIPT_URL + '?' + params.toString(), {redirect:'follow'});
+    const url = APPS_SCRIPT_URL + '?' + params.toString();
+    console.log('Ukládám na:', url);
+    const r = await fetch(url, {redirect:'follow'});
+    console.log('Uložení status:', r.status);
+    const text = await r.text();
+    console.log('Uložení odpověď:', text.substring(0,200));
   } catch(e){
-    console.warn('Ukládání žebříčku selhalo', e);
+    console.error('Ukládání selhalo:', e);
   }
 }
 async function showLeaderboard(){ await renderLeaderboard(); showScreen('leaderboard'); }
 async function renderLeaderboard(){
   const scores=await getScores(), medals=['\u{1F947}','\u{1F948}','\u{1F949}'];
   document.getElementById('scores-tbody').innerHTML = scores.length
-    ? scores.map((s,i)=>`<tr><td>${medals[i]||'#'+(i+1)}</td><td>${s.name}</td><td>${s.date}</td><td>${s.cm} cm</td></tr>`).join('')
+    ? scores.map((s,i)=>{
+        // Převod data z ISO formátu na český formát
+        let datum = s.date;
+        try{
+          if(datum && datum.includes('T')){
+            datum = new Date(datum).toLocaleDateString('cs-CZ');
+          }
+        }catch(e){}
+        return `<tr><td>${medals[i]||'#'+(i+1)}</td><td>${s.name}</td><td>${datum}</td><td>${s.cm} cm</td></tr>`;
+      }).join('')
     : '<tr><td colspan="4" style="text-align:center;color:#555;padding:20px">Zat\u00edm \u017e\u00e1dn\u00e9 z\u00e1znamy</td></tr>';
 }
 
