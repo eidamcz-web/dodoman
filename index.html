@@ -167,7 +167,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYhSr6n_0plaZj
 
 async function getScores(){
   try{
-    const r = await fetch(APPS_SCRIPT_URL, {redirect:'follow'});
+    const r = await fetch(APPS_SCRIPT_URL + '?action=get', {redirect:'follow'});
     const data = await r.json();
     return Array.isArray(data) ? data : [];
   } catch(e){
@@ -177,15 +177,17 @@ async function getScores(){
 }
 
 async function saveScores(arr){
-  // arr je seřazené pole — uložíme jen poslední přidaný záznam
   const latest = arr[arr.length-1];
   try{
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(latest)
+    const params = new URLSearchParams({
+      action: 'save',
+      name: latest.name,
+      date: latest.date,
+      cm: latest.cm,
+      pts: latest.pts
     });
+    // GET request s parametry — žádný CORS problém
+    await fetch(APPS_SCRIPT_URL + '?' + params.toString(), {redirect:'follow'});
   } catch(e){
     console.warn('Ukládání žebříčku selhalo', e);
   }
